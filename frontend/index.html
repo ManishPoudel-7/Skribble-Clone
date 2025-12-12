@@ -15,6 +15,9 @@
         <div id="timerBox">⏱️ Timer: 80 </div>
         <div id="wordBox">Waiting for game to start...</div>
         <div id="roundBox">Round 0 of 3</div>
+        Room Code: <span id="roomCodeDisplay"></span>
+    </div>
+    <div>
     </div>
 
     <!-- Main Content -->
@@ -75,10 +78,31 @@
         let prevY = 0;
         let brushSize = 5;
 
-        const socket = io();
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 10
+        });
+
+        // Debug logging
+        socket.on('connect', () => {
+            console.log('✅ Connected to server! Socket ID:', socket.id);
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.log('⚠️ Disconnected:', reason);
+        });
+
         const name = sessionStorage.getItem('name');
         const mascot = sessionStorage.getItem('mascot');
         const roomId = sessionStorage.getItem('roomId');
+
+        console.log('🚪 Attempting to join room:', { roomId, name, mascot });
 
         socket.emit("joinRoom", { roomId, name, mascot });
 
@@ -236,12 +260,21 @@
 
         // HOST CONTROLS
         let isHost = false;
+
         socket.on("youAreHost", (host) => {
             isHost = host;
+            
+            // Update room code display based on host status
+            if (host) {
+                document.getElementById("roomCodeDisplay").innerText = roomId;
+            } else {
+                document.getElementById("roomCodeDisplay").innerText = "******";
+            }
+
             const startBtn = document.getElementById("startGameBtn");
             if(isHost) {
                 startBtn.style.display = "block";
-            }
+            }   
         });
 
         document.getElementById("startGameBtn").addEventListener("click", () => {

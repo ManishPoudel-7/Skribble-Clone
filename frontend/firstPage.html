@@ -80,7 +80,21 @@
 
 
     //Socket Io 
-    const socket = io();
+    const socket = io({
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 10
+    });
+
+    // Debug logging
+    socket.on('connect', () => {
+        console.log('✅ Connected! Socket ID:', socket.id);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('❌ Connection error:', error);
+    });
 
     function generateRoomId(length = 6) {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -91,60 +105,45 @@
         }
         return roomId;
     }
-    //Creating a Room
-    function createRoom(){
+    function createRoom() {
+    const name = document.getElementById('name').value.trim();
+    const mascot = document.getElementById('mascot').innerText;
 
-        const name = document.getElementById('name').value.trim();
-        const mascot = document.getElementById('mascot').innerText;
-
-        
-        if (!name) {
-            alert("Please enter your name.");
-            return;
-        }
-        const roomId = generateRoomId();
-
-        socket.emit('createRoom' , roomId);
-
-        sessionStorage.setItem("name", name);
-        sessionStorage.setItem("roomId", roomId);
-        sessionStorage.setItem("mascot", mascot);
-
-        socket.emit("joinRoom", {
-            roomId,
-            name,
-            mascot
-        });
-
-
-        console.log("Room created with ID:", roomId);
-
-        
-        window.location.href = "index.html";
+    if (!name) {
+        alert("Please enter your name.");
+        return;
     }
 
-    // Joining a Room
+    const roomId = generateRoomId();
+
+    sessionStorage.setItem("name", name);
+    sessionStorage.setItem("mascot", mascot);
+    sessionStorage.setItem("roomId", roomId);
+
+    // Don't wait for roomCreated, just navigate
+    socket.emit("createRoom", roomId);
     
+    // Small delay to ensure server processed createRoom
+    setTimeout(() => {
+        window.location.href = "index.html";
+    }, 100);
+}
+
     function joinRoom() {
         const name = document.getElementById('name').value.trim();
         const roomId = document.getElementById("roomCode").value;
         const mascot = document.getElementById('mascot').innerText;
-    
+
         if (!name || !roomId) {
             alert("Please enter both name and room code.");
             return;
         }
 
-        socket.emit("joinRoom", {
-            roomId: roomId.toUpperCase(),
-            name,
-            mascot
-        });
-
         sessionStorage.setItem("name", name);
         sessionStorage.setItem("mascot", mascot);
         sessionStorage.setItem("roomId", roomId.toUpperCase());
 
+        // Don't emit joinRoom here, let index.html do it
         window.location.href = "index.html";
     }
 
