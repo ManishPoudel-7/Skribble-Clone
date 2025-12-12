@@ -1,9 +1,9 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js" ,
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -11,7 +11,9 @@
   "description": "",
   "dependencies": {
     "express": "^5.1.0",
-    "fs": "^0.0.1-security",
     "socket.io": "^4.8.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

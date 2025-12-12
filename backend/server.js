@@ -3,10 +3,20 @@ const http = require('http');
 const path = require('path');
 const {Server} = require('socket.io');
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// Socket.IO with CORS and production config
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
+});
 
 //Socket IO
 const roomPlayers = {};
