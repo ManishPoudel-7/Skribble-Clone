@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skrible with Manish</title>
+</head>
+<link rel="stylesheet" href="index.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="/socket.io/socket.io.js"></script>
+<body>
+   <div id="gameContainer">
+    <!-- Header Row -->
+    <div id="topHeader">
+        <div id="timerBox">⏱️ Timer: 80 </div>
+        <div id="wordBox">Waiting for game to start...</div>
+        <div id="roundBox">Round 0 of 3</div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainArea">
+        <div id="leaderBoard">
+            <h2>Leaderboard</h2>
+            <div id="allPlayers"></div>
+            <button id="startGameBtn" style="display: none; margin-top: 20px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">Start Game</button>
+        </div>
+        
+        <!-- Shows the word if you are the drawer -->
+        <div id="word-options-overlay">
+            <div id="word-options-container">
+                <h3 style="text-align: center; margin-bottom: 15px;">Choose a word to draw:</h3>
+                <div id="word-options"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="game-over-overlay" style="display: none;">
+            <div id="game-over-container">
+                <h2 style="text-align: center; color: #4CAF50; margin-bottom: 20px;">🎉 Game Over! 🎉</h2>
+                <div id="rankings"></div>
+                <button id="playAgainBtn" style="margin-top: 20px; padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%;">Play Again</button>
+            </div>
+        </div>
+
+        <div id="drawingArea">
+            <canvas id="canvas"></canvas>
+            <div id="allColours">
+                <!-- Color options -->
+            </div>
+            <div id="clearBtn">
+                <i class="fa-solid fa-trash" id="clear"> CLEAR</i>
+                <i class="fa-solid fa-eraser" id="erase"> ERASE</i>
+                Brush Size: <input type="range" id="brushSize" min="1" max="50" value="5">
+            </div>
+        </div>
+
+        <div id="chatSection">
+            <div id="chatMessages"></div>
+            <div id="chatInputContainer">
+                <input type="text" id="userGuess" placeholder="Type your guess..." />
+                <button id="sendGuess" onclick="guesses()">Guess!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext("2d");
+        canvas.width = 600;
+        canvas.height = 500;
+
+        let isDrawing = false;
+        let prevX = 0;
+        let prevY = 0;
+        let brushSize = 5;
+
+        const socket = io();
+        const name = sessionStorage.getItem('name');
+        const mascot = sessionStorage.getItem('mascot');
+        const roomId = sessionStorage.getItem('roomId');
+
+        socket.emit("joinRoom", { roomId, name, mascot });
+
+        // DRAWING EVENTS
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            prevX = e.offsetX;
+            prevY = e.offsetY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if(!isDrawing) return;
+
+            const currX = e.offsetX;
+            const currY = e.offsetY;
+
+            const canvasBackground = 'white';
+            ctx.beginPath();
+            ctx.strokeStyle = isErasing ? canvasBackground : selectedColor;
+            ctx.lineWidth = brushSize;
+            ctx.moveTo(prevX, prevY);
+            ctx.lineTo(currX, currY);
+            ctx.stroke();
+
+            socket.emit("drawing", {
+                prevX: prevX,
+                prevY: prevY,
+                currX: currX,
+                currY: currY,
+                color: isErasing ? canvasBackground : selectedColor,
+                lineWidth: brushSize
+            });
+
+            prevX = currX;
+            prevY = currY;
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', (e) => {
+            isDrawing = false;
+        });
+
+        socket.on("drawing", (data) => {
+            ctx.beginPath();
+            ctx.strokeStyle = data.color;
+            ctx.lineWidth = data.lineWidth;
+            ctx.moveTo(data.prevX, data.prevY);
+            ctx.lineTo(data.currX, data.currY);
+            ctx.stroke();
+        });
+
+        socket.on("clearCanvas", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Color options
+        const colors = [
+            'black', 'white', 'gray', 'red', 'green',
+            'blue', 'yellow', 'orange', 'pink', 'purple',
+            'brown', 'cyan', 'magenta', 'lime', 'teal',
+            'navy', 'gold', 'salmon', 'violet', 'maroon',
+            'coral', 'indigo', 'olive', 'turquoise', 'chocolate', 'lightgray'
+        ];
+
+        const allColours = document.getElementById('allColours');
+
+        for(var i = 0; i < colors.length; i++){
+            allColours.innerHTML += `<div class='color-box' data-color='${colors[i]}'></div>`;
+        }
+
+        let allBoxes = document.querySelectorAll('.color-box');
+
+        for (const box of allBoxes) {
+            box.style.backgroundColor = box.dataset.color;   
+        }
+
+        let selectedColor = 'black';
+        allBoxes.forEach(box => {
+            box.addEventListener('click', () => {
+                selectedColor = box.dataset.color;
+                isErasing = false;
+
+                allBoxes.forEach(b => {
+                    b.classList.remove('selected');
+                });
+
+                box.classList.add('selected');
+            });
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            socket.emit("clearCanvas");
+        });
+
+        let isErasing = false;
+        const eraser = document.getElementById('erase');
+        eraser.addEventListener('click', () => {
+            isErasing = !isErasing;
+            eraser.classList.toggle('selected');
+        });
+       
+        const brushSlider = document.getElementById('brushSize');
+
+        brushSlider.addEventListener('input', (e) => {
+            brushSize = brushSlider.value;
+        });
+
+        // Update Players with Scores
+        socket.on("updatePlayers", (players) => {
+            updateLeaderboard(players, {});
+        });
+
+        socket.on("updateScores", (scores) => {
+            const players = Array.from(document.querySelectorAll('#allPlayers > div')).map(div => {
+                const text = div.textContent;
+                return text;
+            });
+            updateLeaderboard(null, scores);
+        });
+
+        function updateLeaderboard(players, scores) {
+            const allPlayers = document.getElementById("allPlayers");
+            
+            // If we have score data, sort by score
+            if(scores && Object.keys(scores).length > 0) {
+                allPlayers.innerHTML = "";
+                const sortedScores = Object.keys(scores)
+                    .map(id => ({ id, ...scores[id] }))
+                    .sort((a, b) => b.score - a.score);
+                
+                sortedScores.forEach((player, index) => {
+                    const node = document.createElement("div");
+                    node.style.padding = "8px";
+                    node.style.marginBottom = "5px";
+                    node.style.borderRadius = "5px";
+                    node.style.background = index === 0 ? "#ffd700" : index === 1 ? "#c0c0c0" : index === 2 ? "#cd7f32" : "#f0f0f0";
+                    node.innerHTML = `<strong>${player.name}</strong>: ${player.score} pts`;
+                    allPlayers.appendChild(node);
+                });
+            } else if(players) {
+                allPlayers.innerHTML = "";
+                players.forEach(p => {
+                    const node = document.createElement("div");
+                    node.style.padding = "8px";
+                    node.style.marginBottom = "5px";
+                    node.innerHTML = `${p.mascot} - ${p.name}`;
+                    allPlayers.appendChild(node);
+                });
+            }
+        }
+
+        // HOST CONTROLS
+        let isHost = false;
+        socket.on("youAreHost", (host) => {
+            isHost = host;
+            const startBtn = document.getElementById("startGameBtn");
+            if(isHost) {
+                startBtn.style.display = "block";
+            }
+        });
+
+        document.getElementById("startGameBtn").addEventListener("click", () => {
+            socket.emit("startGame", roomId);
+        });
+
+        socket.on("gameStarted", () => {
+            document.getElementById("startGameBtn").style.display = "none";
+            document.getElementById("wordBox").textContent = "Game Starting...";
+        });
+
+        socket.on("waitingToStart", () => {
+            document.getElementById("wordBox").textContent = "Waiting for host to start game...";
+        });
+
+        // Round Updates
+        socket.on("roundUpdate", (data) => {
+            document.getElementById("roundBox").textContent = `Round ${data.current} of ${data.total}`;
+        });
+        
+        // Timer
+        const timer = document.getElementById('timerBox');
+        
+        socket.on("timerUpdate", (time) => {
+            timer.textContent = `⏱️ Timer: ${time}`;
+        });
+
+        socket.on("timeUp", () => {
+            timer.textContent = "⏱️ Time's Up!";
+        });
+
+        socket.on("revealWord", (word) => {
+            document.getElementById("wordBox").textContent = `The word was: ${word}`;
+        });
+
+        // Chat Section
+        function guesses(){
+            const userName = sessionStorage.getItem('name');
+            const guessedValue = document.getElementById('userGuess').value;
+            
+            if(!guessedValue.trim()) return;
+            
+            const chatMessages = document.getElementById('chatMessages');
+            socket.emit("newMessages", { name: userName, text: guessedValue });
+            document.getElementById('userGuess').value = "";
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        document.getElementById('userGuess').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                guesses();
+            }
+        });
+
+        socket.on("updatedMessages", (chatMessages) => {
+            const allMessages = document.getElementById('chatMessages');
+            allMessages.innerHTML = "";
+
+            chatMessages.forEach(({ name, text }) => { 
+                const node = document.createElement("div");
+                node.classList.add("chat-entry");
+                node.innerHTML = `
+                    <span class="chat-name">${name}</span>: 
+                    <span class="chat-text">${text}</span>
+                `;
+                allMessages.appendChild(node);
+            });
+
+            allMessages.scrollTop = allMessages.scrollHeight;
+        });
+
+        socket.on("playerGuessed", (data) => {
+            const allMessages = document.getElementById('chatMessages');
+            const node = document.createElement("div");
+
+            node.classList.add("chat-entry");
+            node.style.backgroundColor = "#90EE90";
+            node.style.padding = "8px";
+            node.style.borderRadius = "5px";
+            node.style.fontWeight = "bold";
+            
+            const emoji = data.position === 1 ? "🥇" : data.position === 2 ? "🥈" : data.position === 3 ? "🥉" : "✅";
+            node.textContent = `${emoji} ${data.name} guessed correctly! (+${data.points} pts)`;
+
+            allMessages.appendChild(node);
+            allMessages.scrollTop = allMessages.scrollHeight;
+        });
+
+        socket.on("allGuessed", (data) => {
+            const allMessages = document.getElementById('chatMessages');
+            const node = document.createElement("div");
+
+            node.classList.add("chat-entry");
+            node.style.backgroundColor = "#FFD700";
+            node.style.padding = "10px";
+            node.style.borderRadius = "5px";
+            node.style.fontWeight = "bold";
+            node.style.textAlign = "center";
+            node.textContent = `🎉 Everyone guessed "${data.word}"! Next turn starting...`;
+
+            allMessages.appendChild(node);
+            allMessages.scrollTop = allMessages.scrollHeight;
+        });
+
+        // Currently Drawing
+        socket.on("currentDrawer", (drawerSocketId) => {
+            if(socket.id === drawerSocketId){
+                document.getElementById('userGuess').disabled = true;
+                document.getElementById('sendGuess').disabled = true;
+                canvas.style.pointerEvents = 'auto';
+            } else {
+                document.getElementById('userGuess').disabled = false;
+                document.getElementById('sendGuess').disabled = false;
+                canvas.style.pointerEvents = 'none';
+            }
+        });
+
+        // Words Selection
+        let wordChosen = false;
+
+        socket.on("waitingForWord", (data) => {
+            document.getElementById("wordBox").textContent = `${data.drawerName} is choosing a word...`;
+        });
+
+        socket.on("wordOptions", (options) => {
+            showWordButtons(options);
+        });
+
+        socket.on("turnStarted", () => {
+            wordChosen = false;
+        });
+
+        function showWordButtons(options){
+            const overlay = document.getElementById("word-options-overlay");
+            const container = document.getElementById("word-options");
+            container.innerHTML = "";
+
+            overlay.style.display = "flex";
+
+            options.forEach((word, index) => {
+                const btn = document.createElement("button");
+                btn.textContent = word;
+                btn.onclick = () => {
+                    socket.emit("wordChosen", word);
+                    wordChosen = true;
+                    overlay.style.display = "none";
+                }
+                container.appendChild(btn);
+            });
+        }
+
+        socket.on("drawerWord", (word) => {
+            document.getElementById('wordBox').textContent = "Your Word: " + word;
+        });
+
+        socket.on("maskedWord", (masked) => {
+            document.getElementById('wordBox').textContent = masked;
+        });
+
+        socket.on("roundStarted", () => {
+            console.log("Round started!");
+        });
+
+        // GAME OVER
+        socket.on("gameOver", (data) => {
+            const overlay = document.getElementById("game-over-overlay");
+            const rankings = document.getElementById("rankings");
+            rankings.innerHTML = "";
+
+            data.rankings.forEach((player, index) => {
+                const node = document.createElement("div");
+                node.style.padding = "15px";
+                node.style.marginBottom = "10px";
+                node.style.borderRadius = "8px";
+                node.style.fontSize = "18px";
+                node.style.fontWeight = "bold";
+                
+                if(index === 0) {
+                    node.style.background = "linear-gradient(135deg, #FFD700, #FFA500)";
+                    node.innerHTML = `🥇 1st Place: ${player.name} - ${player.score} pts`;
+                } else if(index === 1) {
+                    node.style.background = "linear-gradient(135deg, #C0C0C0, #A8A8A8)";
+                    node.innerHTML = `🥈 2nd Place: ${player.name} - ${player.score} pts`;
+                } else if(index === 2) {
+                    node.style.background = "linear-gradient(135deg, #CD7F32, #8B4513)";
+                    node.innerHTML = `🥉 3rd Place: ${player.name} - ${player.score} pts`;
+                } else {
+                    node.style.background = "#f0f0f0";
+                    node.innerHTML = `${index + 1}th: ${player.name} - ${player.score} pts`;
+                }
+                
+                rankings.appendChild(node);
+            });
+
+            overlay.style.display = "flex";
+
+            // Show start button for host
+            if(isHost) {
+                document.getElementById("startGameBtn").style.display = "block";
+            }
+        });
+
+        document.getElementById("playAgainBtn").addEventListener("click", () => {
+            document.getElementById("game-over-overlay").style.display = "none";
+            if(isHost) {
+                socket.emit("startGame", roomId);
+            }
+        });
+
+    </script>
+</body>
+</html>

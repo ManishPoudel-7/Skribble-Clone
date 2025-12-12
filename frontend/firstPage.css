@@ -1,0 +1,114 @@
+body{
+        display: flex;
+        justify-content: center;
+        font-family: "Winky Rough";
+        font-size: x-large;
+        background: linear-gradient(to right, #82d5c5, #5970d7);
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    #main-box{
+        padding: auto;
+        border-radius: 2rem;
+        height: auto;
+        width: 25rem;
+        background-color: white;
+        font-family: "Winky Rough";
+    }
+    #prevIdBtn , #nextIdBtn{
+        margin: 1rem;
+        height: 3rem;
+        width: 3rem;
+        border-radius: 30rem;
+        font-size: x-large;
+    }
+    #avatar{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    #mascot{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 4rem;
+        width: 4rem;
+        border-radius: 50rem;
+        font-size: xx-large;
+        background-color: gainsboro;
+    }
+    #mainForm{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        margin: 1rem;
+        padding: 0.5rem;
+    }
+
+    #name , #createBtn , #joinBtn , #roomCode , #roomBtn{
+        font-family: "Winky Rough";
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 1rem;
+        height: 2.5rem;
+        width: 22rem;
+        border-radius: .5rem;
+
+    }
+
+    #createBtn{
+        background-color: rgb(3, 226, 3);
+    }
+
+    #joinBtn , #roomBtn{
+        background-color: rgb(31, 110, 237);
+    }
+
+
+    .actionBtn {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+    }
+
+    #joinRoomSection {
+    display: none;
+    padding-bottom: 1rem;
+    animation: fadeIn 0.3s ease-in-out;
+    }
+
+    #roomBtn:hover,
+    #joinBtn:hover,
+    #createBtn:hover{
+        cursor: pointer;
+        transform: scale(1.06);
+        filter: brightness(90%);
+        
+    }
+
+    #whole h1 {
+        text-align: center;
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-top: 2rem;
+        margin-bottom: 0.5rem;
+        color: #ffffff;
+        text-shadow: 2px 2px #1e3c72;
+    }
+
+    #whole h3 {
+        text-align: center;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #fdfdfd;
+        margin-bottom: 2rem;
+        text-shadow: 1px 1px #3c6382;
+    }

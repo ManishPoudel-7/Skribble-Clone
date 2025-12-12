@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skribbl with Manish</title>
+</head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Winky+Rough:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="firstPage.css">
+<body>
+    <div id="whole">
+        <h1>🎨 Skribbl with Indo</h1>
+        <h3>Draw, Guess, and Laugh with friends!</h3>
+        <div id="main-box">
+            <div id="avatar">
+                <button id="prevIdBtn"> < </button>
+                <div id="mascot">😀</div>
+                <button id="nextIdBtn">></button>
+            </div>
+            <div id="mainForm">
+                <input type="text" id="name" placeholder="Enter your name" required>
+                <button type="submit" id="createBtn" class="actionBtn" onclick="createRoom()">
+                    ✚ Create Room
+                </button>
+                <button type="submit" id="joinBtn" class="actionBtn">
+                    ↪ Join Room
+                </button>
+            </div>
+            <div id="joinRoomSection">
+                <input type="text" id="roomCode" placeholder="Enter Room Code.....">
+                <button id="roomBtn" class="actionBtn" onclick="joinRoom()"> GO!!</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const roomSection = document.getElementById('joinRoomSection');
+    const roomBtn = document.getElementById('joinBtn');
+    const mascot = document.getElementById('mascot');
+    const prevBtn = document.getElementById('prevIdBtn');
+    const nextBtn = document.getElementById('nextIdBtn');
+
+    let currIndex = 1;
+    const avatarEmojis = ["😀", "🤖", "🐶", "👩‍🚀", "👻",
+                        "😎", "🧙", "🍕", "🧑‍💻", "🐱",
+                        "😂", "🐵", "👨‍🎨", "🧟", "🍔",
+                        "😉", "🐸", "👩‍⚕️", "🥑", "👽"];
+
+    const avatarLen = avatarEmojis.length;
+    prevBtn.addEventListener("click",()=>{
+        if(currIndex == 0){
+            currIndex = avatarLen-1;
+        }else{
+            currIndex -=  1;
+        }
+        mascot.innerText = avatarEmojis[currIndex];
+    });
+
+    nextBtn.addEventListener("click",()=>{
+        if(currIndex == avatarLen-1){
+            currIndex = 0;
+        }else{
+            currIndex +=  1;
+        }
+        mascot.innerText = avatarEmojis[currIndex];
+        
+    });
+
+    roomBtn.addEventListener('click',()=>{
+        if(roomSection.style.display === "none"){
+            roomSection.style.display = "block";
+        }else{
+            roomSection.style.display = "none";
+        }
+    });
+
+
+    //Socket Io 
+    const socket = io();
+
+    function generateRoomId(length = 6) {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let roomId = '';
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            roomId += characters[randomIndex];
+        }
+        return roomId;
+    }
+    //Creating a Room
+    function createRoom(){
+
+        const name = document.getElementById('name').value.trim();
+        const mascot = document.getElementById('mascot').innerText;
+
+        
+        if (!name) {
+            alert("Please enter your name.");
+            return;
+        }
+        const roomId = generateRoomId();
+
+        socket.emit('createRoom' , roomId);
+
+        sessionStorage.setItem("name", name);
+        sessionStorage.setItem("roomId", roomId);
+        sessionStorage.setItem("mascot", mascot);
+
+        socket.emit("joinRoom", {
+            roomId,
+            name,
+            mascot
+        });
+
+
+        console.log("Room created with ID:", roomId);
+
+        
+        window.location.href = "index.html";
+    }
+
+    // Joining a Room
+    
+    function joinRoom() {
+        const name = document.getElementById('name').value.trim();
+        const roomId = document.getElementById("roomCode").value;
+        const mascot = document.getElementById('mascot').innerText;
+    
+        if (!name || !roomId) {
+            alert("Please enter both name and room code.");
+            return;
+        }
+
+        socket.emit("joinRoom", {
+            roomId: roomId.toUpperCase(),
+            name,
+            mascot
+        });
+
+        sessionStorage.setItem("name", name);
+        sessionStorage.setItem("mascot", mascot);
+        sessionStorage.setItem("roomId", roomId.toUpperCase());
+
+        window.location.href = "index.html";
+    }
+
+
+    socket.on("updatePlayers", players => {
+    const allPlayers = document.getElementById('allPlayers');
+    if (!allPlayers) return; // Don't run if not on game page
+
+    allPlayers.innerHTML = '';
+    players.forEach(p => {
+        const node = document.createElement('li');
+        node.innerHTML = `${p.mascot} - ${p.name}`;
+        allPlayers.appendChild(node);
+    });
+});
+
+
+
+</script>
+</html>

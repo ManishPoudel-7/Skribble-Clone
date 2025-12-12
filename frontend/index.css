@@ -1,0 +1,318 @@
+body {
+  background-image: url("background.jpg");
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+/* Top Header */
+#topHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #e2e8f0;
+  padding: 10px 20px;
+  font-weight: bold;
+  font-size: 18px;
+  border-bottom: 2px solid #aaa;
+  border-radius: 10rem;
+  width: 98%;
+  max-width: 1200px;
+  box-sizing: border-box;
+  margin-top: 20px;
+}
+
+#topHeader div {
+  flex: 1;
+  text-align: center;
+  padding: 5px;
+}
+
+/* Main layout for leaderboard, canvas, and chat */
+#mainArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 0 2rem;
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+/* Leaderboard box on the left */
+#leaderBoard {
+  width: 250px;
+  height: 550px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 3px solid black;
+  border-radius: 10px;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+#leaderBoard h1 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+/* Drawing area in the middle */
+#drawingArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 550px;
+}
+
+/* Canvas styling */
+#canvas {
+  border: 3px solid black;
+  background-color: white;
+}
+
+/* Color palette area */
+#allColours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: 10px;
+  border: 3px solid black;
+  width: 37.5rem;
+  height: 6rem;
+  background-image: url('frontend/background.png');
+  background-size: cover;
+  background-position: center;
+  box-sizing: border-box;
+}
+
+/* Colors Option */
+.color-box {
+  height: 30px;
+  width: 30px;
+  border-radius: 10px;
+  margin: 4px;
+  cursor: pointer;
+}
+
+.color-box.selected {
+  border: 3px solid black;
+  transform: scale(1.1);
+}
+
+/* Tools: Clear, Erase, Brush size */
+#toolOptions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  color: black;
+}
+
+#toolOptions i {
+  cursor: pointer;
+}
+
+/* Chat box on the right */
+#chatSection {
+  width: 300px;
+  height: 550px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 3px solid black;
+  border-radius: 10px;
+  padding: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  
+}
+
+#chatMessages {
+  overflow-y: auto;
+  margin-bottom: 10px;
+  
+}
+
+#chatInputArea {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+  
+}
+
+#input {
+  flex: 1;
+  padding: 5px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  
+}
+#sendBtn {
+  padding: 6px 12px;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#sendBtn:hover {
+  background-color: #555;
+}
+
+/* Chat Messages */
+.log-entry {
+  margin: 5px 0;
+  padding: 5px;
+  background: #e8f4ff;
+  border-left: 3px solid #007bff;
+}
+
+.chat-entry {
+  margin: 6px 0;
+  padding: 6px 10px;
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.chat-name {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-right: 5px;
+}
+
+.chat-text {
+  color: #555;
+}
+
+
+/* Buttons for the words for Drawer */
+
+.word-choice {
+  background: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.word-choice:hover {
+  background: #45a049;
+}
+
+
+/* Word Options Buttons */
+
+/* Overlay (covers the whole screen with transparent background) */
+#word-options-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* semi-transparent black */
+  display: none; /* hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* ensure it's on top */
+}
+
+/* The container where buttons sit */
+#word-options {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Individual word buttons */
+#word-options button {
+  padding: 12px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #3498db;
+  color: white;
+  transition: 0.2s ease;
+}
+
+#word-options button:hover {
+  background: #2980b9;
+  transform: scale(1.05);
+}
+
+
+#word-options-container {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Game Over Overlay */
+#game-over-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+#game-over-container {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#rankings {
+  margin-top: 20px;
+}
+
+#word-options-container {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#playAgainBtn:hover {
+  background: #45a049;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
