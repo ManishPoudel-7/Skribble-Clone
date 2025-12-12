@@ -47,64 +47,70 @@ io.on('connection', (socket) => {
 
     // ---------------- JOIN ROOM ----------------
     socket.on("joinRoom", ({ roomId, name, mascot }) => {
-        socket.join(roomId);
-        console.log(`User ${socket.id} joined room ${roomId} as ${mascot} ${name}`);
+    socket.join(roomId);
+    console.log(`User ${socket.id} joined room ${roomId} as ${mascot} ${name}`);
 
-        if (!roomPlayers[roomId]) {
-            roomPlayers[roomId] = [];
-            roomHosts[roomId] = socket.id;
-            gameStarted[roomId] = false;
-            messages[roomId] = [];
-            roomScores[roomId] = {};
-            roomSettings[roomId] = {
-                currentRound: 0,
-                totalRounds: TOTAL_ROUNDS
+    if (!roomPlayers[roomId]) {
+        roomPlayers[roomId] = [];
+        roomHosts[roomId] = socket.id;
+        gameStarted[roomId] = false;
+        messages[roomId] = [];
+        roomScores[roomId] = {};
+        roomSettings[roomId] = {
+            currentRound: 0,
+            totalRounds: TOTAL_ROUNDS
+        };
+        socket.emit("youAreHost", true);
+    }
+
+    const alreadyExists = roomPlayers[roomId].some(p => p.id === socket.id);
+
+    if (!alreadyExists) {
+        roomPlayers[roomId].push({ id: socket.id, name, mascot });
+        
+        // Initialize score for new player
+        if(!roomScores[roomId][socket.id]) {
+            roomScores[roomId][socket.id] = {
+                name: name,
+                score: 0
             };
         }
+    }
 
-        const alreadyExists = roomPlayers[roomId].some(p => p.id === socket.id);
+    // IMPORTANT: Check if this user is the host
+    if(roomHosts[roomId] === socket.id) {
+        socket.emit("youAreHost", true);
+    } else {
+        socket.emit("youAreHost", false);
+    }
 
-        if (!alreadyExists) {
-            roomPlayers[roomId].push({ id: socket.id, name, mascot });
-            
-            // Initialize score for new player
-            if(!roomScores[roomId][socket.id]) {
-                roomScores[roomId][socket.id] = {
-                    name: name,
-                    score: 0
-                };
-            }
-
-            if(roomHosts[roomId] === socket.id) {
-                socket.emit("youAreHost", true);
-            }
-
-            if(gameStarted[roomId] && roomTurns[roomId]) {
-                let currentDrawer = roomPlayers[roomId][roomTurns[roomId].turnIndex];
-                socket.emit("currentDrawer", currentDrawer.id);
-                
-                if(roomTurns[roomId].chosenWord){
-                    socket.emit("maskedWord", "_ ".repeat(roomTurns[roomId].chosenWord.length));
-                    if(roomTimers[roomId] && roomTimers[roomId].timeRemaining !== undefined) {
-                        socket.emit("timerUpdate", roomTimers[roomId].timeRemaining);
-                    }
-                } else {
-                    socket.emit("waitingForWord", {
-                        drawerName: currentDrawer.name
-                    });
-                }
-            } else {
-                socket.emit("waitingToStart");
-            }
-        }
-
-        io.to(roomId).emit("updatePlayers", roomPlayers[roomId]);
-        io.to(roomId).emit("updateScores", roomScores[roomId]);
+    // Send game state to the joining player
+    if(gameStarted[roomId] && roomTurns[roomId]) {
+        let currentDrawer = roomPlayers[roomId][roomTurns[roomId].turnIndex];
+        socket.emit("currentDrawer", currentDrawer.id);
         
-        if(messages[roomId]) {
-            socket.emit('updatedMessages', messages[roomId]);
+        if(roomTurns[roomId].chosenWord){
+            socket.emit("maskedWord", "_ ".repeat(roomTurns[roomId].chosenWord.length));
+            if(roomTimers[roomId] && roomTimers[roomId].timeRemaining !== undefined) {
+                socket.emit("timerUpdate", roomTimers[roomId].timeRemaining);
+            }
+        } else {
+            socket.emit("waitingForWord", {
+                drawerName: currentDrawer.name
+            });
         }
-    });
+    } else {
+        socket.emit("waitingToStart");
+    }
+
+    // Update all players in the room (including the one who just joined)
+    io.to(roomId).emit("updatePlayers", roomPlayers[roomId]);
+    io.to(roomId).emit("updateScores", roomScores[roomId]);
+    
+    if(messages[roomId]) {
+        socket.emit('updatedMessages', messages[roomId]);
+    }
+});
 
     // ---------------- START GAME ----------------
     socket.on("startGame", (roomId) => {
