@@ -27,6 +27,7 @@ io.on('connection', (socket) => {
     // ---------------- CREATE ROOM ----------------
     socket.on("createRoom", (roomId) => {
         socket.join(roomId);
+        socket.emit("roomCreated", {roomId});
         console.log(`User ${socket.id} created and joined room ${roomId}`);
 
         if (!roomPlayers[roomId]) {
